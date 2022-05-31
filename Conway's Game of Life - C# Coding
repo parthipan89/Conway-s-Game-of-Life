@@ -1,0 +1,162 @@
+using System;
+using System.Text;
+using System.Threading;
+
+namespace ConwaysGameofLife
+{
+    class Program
+    {
+        private const int DELAY = 1000;
+        private const ConsoleColor dead_cell = ConsoleColor.White;
+        private const ConsoleColor live_cell = ConsoleColor.Black;
+        private const ConsoleColor other_cell = ConsoleColor.Gray;
+        private const char EMPTY_BLOCK_Letter = ' ';
+        private const char FULL_BLOCK_Letter = '\u2588';
+
+        private static bool[,] screen;
+        private static int width = 32;
+        private static int height = 32;
+        private static bool loopEdges = true;
+
+        static void Main(string[] args)
+        {
+            InitializeInputvalueScreen();
+            InitializeBackgroudscreen();
+
+            while (!Console.KeyAvailable || Console.ReadKey(true).Key != ConsoleKey.Escape)
+            {
+                Program.drawscreen();
+                Program.updatescreen();
+                Thread.Sleep(DELAY);
+            }
+        }
+        private static void InitializeBackgroudscreen()
+        {
+            Console.BackgroundColor = other_cell;
+            Console.Clear();
+            Console.CursorVisible = false;
+
+            int width = Math.Max(Program.width, 8) * 2 + 1;
+            int height = Math.Max(Program.height, 8) + 1;
+            Console.SetWindowSize(width, height);
+            Console.SetBufferSize(width, height);
+
+            Console.BackgroundColor = dead_cell;
+            Console.ForegroundColor = live_cell;
+        }
+
+        // Initialize Input values, define gridview size and creates a 3x3 screen with a blinker.
+        private static void InitializeInputvalueScreen()
+        {
+            Program.width = 25;
+            Program.height = 25;
+
+            Program.loopEdges = false;
+
+            Program.screen = new bool[25, 25];
+
+            Program.screen[2, 1] = true;
+            Program.screen[2, 2] = true;
+            Program.screen[2, 3] = true;
+
+            //Program.screen[9, 8] = true;
+            //Program.screen[10, 9] = true;
+            //Program.screen[8, 10] = true;
+            //Program.screen[9, 10] = true;
+            //Program.screen[10, 10] = true;
+
+            //Program.screen[1, 2] = true;
+            //Program.screen[2, 1] = true;
+            //Program.screen[2, 3] = true;
+            //Program.screen[3, 2] = true;            
+        }
+
+        // Draws the screen to the console.
+        private static void drawscreen()
+        {
+            var builder = new StringBuilder();
+            var inputvalues = new StringBuilder();
+            var NoofGeneration = new StringBuilder();
+            var xval = 0;
+            var yval = 0;
+            int cnt = 0;
+            //string[] testinput;
+
+            for (var y = 0; y < Program.height; y++)
+            {
+                for (var x = 0; x < Program.width; x++)
+                {
+                    char c = Program.screen[x, y] ? FULL_BLOCK_Letter : EMPTY_BLOCK_Letter;
+                    if (c != ' ')
+                    {
+                        xval = x;
+                        yval = y;
+                        inputvalues.Append("(" + x + ",");
+                        inputvalues.Append(y + ")");
+                        //NoofGeneration.Append(cnt);
+                        cnt++;
+                    }
+                    builder.Append(c);
+                    builder.Append(c);
+                }
+                builder.Append('\n');
+                //inputvalues.Append(xval, yval);
+            }
+            Console.SetCursorPosition(0, 0);
+            Console.Write(builder.ToString());
+            Console.Write("\n");
+            Console.Write("Live Population:");
+            Console.Write(inputvalues.ToString());
+            Console.Write("\n");
+            Console.Write("No of Generation:");
+            Console.Write(cnt);
+        }
+
+        // Moves the screen to the next state based on Conway's rules.
+        private static void updatescreen()
+        {
+            bool[,] newscreen = new bool[Program.width, Program.height];
+
+            for (var y = 0; y < Program.height; y++)
+            {
+                for (var x = 0; x < Program.width; x++)
+                {
+                    var n = countLiveCellNeighbors(x, y);
+                    var c = Program.screen[x, y];
+
+                    //newscreen[x, y] = n && ((n == 2 || n == 3)) || c && n == 3;
+                    newscreen[x, y] = c && (n == 2 || n == 3) || !c && n == 3;  // live cell dies otherthan 2 r 3 live neighbors
+                }
+            }
+
+            Program.screen = newscreen;  // set new state to screen
+        }
+
+        // it gives to x,y positions for live neighbors cell
+        private static int countLiveCellNeighbors(int x, int y)
+        {
+            int value = 0;
+
+            for (var j = -1; j <= 1; j++)
+            {
+                if (!Program.loopEdges && y + j < 0 || y + j >= Program.height)
+                {
+                    continue;
+                }
+                int k = (y + j + Program.height) % Program.height;
+
+                for (var i = -1; i <= 1; i++)
+                {
+                    if (!Program.loopEdges && x + i < 0 || x + i >= Program.width)
+                    {
+                        continue;
+                    }
+                    int h = (x + i + Program.width) % Program.width;
+                    value += Program.screen[h, k] ? 1 : 0;
+                }
+            }
+            // Subtract 1 if (x,y) is alive since we counted it as a neighbor.
+            return value - (Program.screen[x, y] ? 1 : 0);
+        }
+    }
+}
